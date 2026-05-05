@@ -14,22 +14,26 @@ const exhibits = JSON.parse(
 ).exhibits;
 const exhibitMap = Object.fromEntries(exhibits.map(e => [e.id, e]));
 
-// Per-exhibit playback state. Authoritative on the server.
-//   playing      — bool, currently playing or paused
-//   position     — seconds into the track at the moment updatedAt was captured
-//   updatedAt    — server epoch ms when state was set
-const state = {};
-for (const e of exhibits) {
-  state[e.id] = { playing: false, position: 0, updatedAt: Date.now() };
-}
+// One global tour state. The guide picks which exhibit plays for everyone.
+//   exhibitId  — currently selected exhibit, or null if none yet
+//   playing    — whether audio is playing right now
+//   position   — seconds into the track at the moment updatedAt was captured
+//   updatedAt  — server epoch ms when state was last set
+const state = {
+  exhibitId: null,
+  playing: false,
+  position: 0,
+  updatedAt: Date.now(),
+};
+const TOUR_ROOM = 'tour';
 
-function snapshot(exhibitId) {
-  const s = state[exhibitId];
+function snapshot() {
   return {
-    exhibitId,
-    playing: s.playing,
-    position: s.position,
-    updatedAt: s.updatedAt,
+    exhibitId: state.exhibitId,
+    exhibit: state.exhibitId ? exhibitMap[state.exhibitId] : null,
+    playing: state.playing,
+    position: state.position,
+    updatedAt: state.updatedAt,
     serverNow: Date.now(),
   };
 }
@@ -45,40 +49,23 @@ app.get('/listen', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'l
 app.get('/guide',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'guide.html')));
 
 app.get('/api/exhibits', (_req, res) => res.json(exhibits));
+app.get('/api/state',    (_req, res) => res.json(snapshot()));
+app.get('/api/time',     (_req, res) => res.json({ serverNow: Date.now() }));
 
-app.get('/api/exhibits/:id', (req, res) => {
-  const ex = exhibitMap[req.params.id];
-  if (!ex) return res.status(404).json({ error: 'not found' });
-  res.json(ex);
-});
-
-app.get('/api/state/:id', (req, res) => {
-  if (!state[req.params.id]) return res.status(404).json({ error: 'not found' });
-  res.json(snapshot(req.params.id));
-});
-
-app.get('/api/qr/:id', async (req, res) => {
-  const ex = exhibitMap[req.params.id];
-  if (!ex) return res.status(404).send('not found');
-  const host = req.get('host');
-  const proto = req.protocol;
-  const url = `${proto}://${host}/listen?e=${encodeURIComponent(ex.id)}`;
-  const png = await QRCode.toBuffer(url, { width: 512, margin: 2 });
+// One QR code that everyone scans to join the tour.
+app.get('/api/qr', async (req, res) => {
+  const url = `${req.protocol}://${req.get('host')}/listen`;
+  const png = await QRCode.toBuffer(url, { width: 768, margin: 2 });
   res.type('png').send(png);
 });
 
-app.get('/api/time', (_req, res) => res.json({ serverNow: Date.now() }));
-
 io.on('connection', socket => {
   let role = null;          // 'guide' or 'listener'
-  let joinedExhibit = null;
 
-  socket.on('listener:join', exhibitId => {
-    if (!state[exhibitId]) return;
+  socket.on('listener:join', () => {
     role = 'listener';
-    joinedExhibit = exhibitId;
-    socket.join(exhibitId);
-    socket.emit('state', snapshot(exhibitId));
+    socket.join(TOUR_ROOM);
+    socket.emit('state', snapshot());
   });
 
   socket.on('guide:auth', (token, ack) => {
@@ -87,55 +74,50 @@ io.on('connection', socket => {
       return;
     }
     role = 'guide';
-    if (typeof ack === 'function') ack({ ok: true, exhibits });
+    socket.join(TOUR_ROOM); // so the guide also receives broadcasts
+    if (typeof ack === 'function') ack({ ok: true, exhibits, state: snapshot() });
   });
 
   socket.on('guide:select', exhibitId => {
-    if (role !== 'guide' || !state[exhibitId]) return;
-    if (joinedExhibit && joinedExhibit !== exhibitId) {
-      socket.leave(joinedExhibit);
-    }
-    joinedExhibit = exhibitId;
-    socket.join(exhibitId);
-    socket.emit('state', snapshot(exhibitId));
+    if (role !== 'guide' || !exhibitMap[exhibitId]) return;
+    state.exhibitId = exhibitId;
+    state.position = 0;
+    state.playing = false;
+    state.updatedAt = Date.now();
+    io.to(TOUR_ROOM).emit('state', snapshot());
   });
 
   socket.on('guide:play', () => {
-    if (role !== 'guide' || !joinedExhibit) return;
-    const s = state[joinedExhibit];
-    if (s.playing) return;
-    s.playing = true;
-    s.updatedAt = Date.now();
-    io.to(joinedExhibit).emit('state', snapshot(joinedExhibit));
+    if (role !== 'guide' || !state.exhibitId) return;
+    if (state.playing) return;
+    state.playing = true;
+    state.updatedAt = Date.now();
+    io.to(TOUR_ROOM).emit('state', snapshot());
   });
 
   socket.on('guide:pause', () => {
-    if (role !== 'guide' || !joinedExhibit) return;
-    const s = state[joinedExhibit];
-    if (!s.playing) return;
-    // Freeze position at "where we are now".
-    s.position = s.position + (Date.now() - s.updatedAt) / 1000;
-    s.playing = false;
-    s.updatedAt = Date.now();
-    io.to(joinedExhibit).emit('state', snapshot(joinedExhibit));
+    if (role !== 'guide' || !state.exhibitId) return;
+    if (!state.playing) return;
+    state.position = state.position + (Date.now() - state.updatedAt) / 1000;
+    state.playing = false;
+    state.updatedAt = Date.now();
+    io.to(TOUR_ROOM).emit('state', snapshot());
   });
 
   socket.on('guide:seek', position => {
-    if (role !== 'guide' || !joinedExhibit) return;
+    if (role !== 'guide' || !state.exhibitId) return;
     if (typeof position !== 'number' || position < 0) return;
-    const s = state[joinedExhibit];
-    s.position = position;
-    s.updatedAt = Date.now();
-    io.to(joinedExhibit).emit('state', snapshot(joinedExhibit));
+    state.position = position;
+    state.updatedAt = Date.now();
+    io.to(TOUR_ROOM).emit('state', snapshot());
   });
 
   socket.on('guide:stop', () => {
-    if (role !== 'guide' || !joinedExhibit) return;
-    const s = state[joinedExhibit];
-    s.playing = false;
-    s.position = 0;
-    s.updatedAt = Date.now();
-    io.to(joinedExhibit).emit('state', snapshot(joinedExhibit));
+    if (role !== 'guide' || !state.exhibitId) return;
+    state.playing = false;
+    state.position = 0;
+    state.updatedAt = Date.now();
+    io.to(TOUR_ROOM).emit('state', snapshot());
   });
 });
 

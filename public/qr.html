@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Exhibit QR codes</title>
+  <title>聲音 QR code</title>
   <link rel="stylesheet" href="/css/styles.css" />
   <style>
     @media print {
@@ -11,30 +11,30 @@
       .card, .qr-card { background: white; border: 1px solid #ccc; }
       .no-print { display: none; }
     }
-    .qr-card { background: #181c23; border: 1px solid #262c36; border-radius: 12px; padding: 16px; text-align: center; }
-    .qr-card h3 { margin: 0 0 8px; }
+    .qr-card {
+      background: #181c23;
+      border: 1px solid #262c36;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .qr-card img { width: 100%; height: auto; background: white; border-radius: 8px; padding: 12px; }
+    .qr-card .url { margin-top: 12px; font-size: 14px; color: #b9c2cf; word-break: break-all; }
   </style>
 </head>
 <body>
   <main class="container">
-    <h1 class="no-print">聲音 QR codes</h1>
-    <p class="muted no-print">掃描以聆聽聲音</p>
-    <div id="grid" class="qr-grid"></div>
+    <h1 class="no-print">聲音 QR code</h1>
+    <p class="muted no-print">掃描以加入聲音導覽</p>
+    <div class="qr-card">
+      <img alt="QR code to join the tour" src="/api/qr" />
+      <div class="url" id="url"></div>
+    </div>
   </main>
   <script>
-    fetch('/api/exhibits').then(r => r.json()).then(list => {
-      const grid = document.getElementById('grid');
-      for (const ex of list) {
-        const card = document.createElement('div');
-        card.className = 'qr-card';
-        card.innerHTML = `
-          <h3>${ex.title}</h3>
-          <img alt="QR for ${ex.title}" src="/api/qr/${encodeURIComponent(ex.id)}" />
-          <div class="muted" style="margin-top:8px;">${location.origin}/listen?e=${ex.id}</div>
-        `;
-        grid.appendChild(card);
-      }
-    });
+    document.getElementById('url').textContent = location.origin + '/listen';
   </script>
 </body>
 </html>

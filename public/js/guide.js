@@ -88,13 +88,29 @@
         return;
       }
       exhibits = resp.exhibits;
+      if (resp.state) {
+        serverState = resp.state;
+        currentExhibitId = resp.state.exhibitId;
+        if (resp.state.exhibit) currentTitle.textContent = resp.state.exhibit.title;
+        renderStatus();
+      }
       authCard.hidden = true;
       controlCard.hidden = false;
       renderExhibits();
     });
   };
 
-  socket.on('state', s => { serverState = s; renderStatus(); });
+  socket.on('state', s => {
+    serverState = s;
+    // The server is authoritative about which exhibit is selected — keep
+    // the UI in sync even if state is changed by another guide tab.
+    if (s.exhibitId !== currentExhibitId) {
+      currentExhibitId = s.exhibitId;
+      if (s.exhibit) currentTitle.textContent = s.exhibit.title;
+      renderExhibits();
+    }
+    renderStatus();
+  });
 
   function requireExhibit() {
     if (!currentExhibitId) { alert('Select an exhibit first.'); return false; }

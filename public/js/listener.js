@@ -1,9 +1,6 @@
 (() => {
   const $ = sel => document.querySelector(sel);
 
-  const params = new URLSearchParams(location.search);
-  const exhibitId = params.get('e');
-
   const titleEl = $('#exhibit-title');
   const descEl  = $('#exhibit-desc');
   const joinCard = $('#join-card');
@@ -14,32 +11,12 @@
   const progressEl = $('#progress');
   const audio = $('#player');
 
-  if (!exhibitId) {
-    titleEl.textContent = 'No exhibit specified';
-    descEl.textContent = 'This page should be opened by scanning an exhibit’s QR code.';
-    joinCard.hidden = true;
-    return;
-  }
-
-  let exhibit = null;
   let serverState = null;
   let lastApplied = null;          // updatedAt of the last state we acted on
   let mediaReady = false;          // audio metadata loaded -> seeking is safe
+  let loadedExhibitId = null;      // which exhibit is currently in audio.src
   const clock = new SyncClock();
   let socket = null;
-
-  async function loadExhibit() {
-    const r = await fetch(`/api/exhibits/${encodeURIComponent(exhibitId)}`);
-    if (!r.ok) {
-      titleEl.textContent = 'Exhibit not found';
-      joinCard.hidden = true;
-      return;
-    }
-    exhibit = await r.json();
-    titleEl.textContent = exhibit.title;
-    descEl.textContent = exhibit.description || '';
-    audio.src = exhibit.audio;
-  }
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -58,17 +35,19 @@
       statusEl.textContent = 'connecting'; statusEl.className = 'status connecting';
       return;
     }
+    if (!serverState.exhibitId) {
+      statusEl.textContent = 'WAITING';   statusEl.className = 'status connecting';
+      return;
+    }
     statusEl.textContent = serverState.playing ? 'PLAYING' : 'PAUSED';
     statusEl.className = 'status ' + (serverState.playing ? 'playing' : 'paused');
   }
 
-  // Apply each new server state exactly once. Between events the local audio
-  // plays freely — we accept a small drift over the duration of a track in
-  // exchange for not glitching the audio with periodic seeks.
+  // Sync once per server state change, then let the device play freely.
   function applyState({ force = false } = {}) {
-    if (!serverState) return;
+    if (!serverState || !serverState.exhibitId) return;
     if (!force && lastApplied === serverState.updatedAt) return;
-    if (!mediaReady) return; // will be retried from the canplay handler
+    if (!mediaReady) return; // canplay handler will retry
     lastApplied = serverState.updatedAt;
 
     if (!serverState.playing) {
@@ -86,32 +65,55 @@
     audio.play().catch(() => {});
   }
 
-  // UI ticker — purely cosmetic, no sync work.
+  // Load (or swap) the audio file for the current exhibit, then re-apply state.
+  function loadExhibitAudio() {
+    if (!serverState || !serverState.exhibit) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      titleEl.textContent = '等待播放員…';
+      descEl.textContent = '';
+      loadedExhibitId = null;
+      mediaReady = false;
+      return;
+    }
+    if (serverState.exhibitId === loadedExhibitId) return;
+
+    loadedExhibitId = serverState.exhibitId;
+    mediaReady = false;
+    lastApplied = null;
+    titleEl.textContent = serverState.exhibit.title;
+    descEl.textContent  = serverState.exhibit.description || '';
+    audio.pause();
+    audio.src = serverState.exhibit.audio;
+    audio.load();
+  }
+
+  // UI ticker — purely cosmetic.
   setInterval(() => {
     if (audio.duration) progressEl.value = audio.currentTime / audio.duration;
     timeEl.textContent = fmt(audio.currentTime);
   }, 250);
 
+  // Audio element listeners — set once, fire on every src change.
+  audio.addEventListener('loadedmetadata', () => { mediaReady = true; applyState(); });
+  audio.addEventListener('canplay',        () => { mediaReady = true; applyState(); });
+
   joinBtn.onclick = async () => {
     joinBtn.disabled = true;
-    joinBtn.textContent = 'Joining…';
+    joinBtn.textContent = '加入中…';
 
-    await loadExhibit();
-    if (!exhibit) return;
-
-    audio.addEventListener('loadedmetadata', () => { mediaReady = true; applyState(); });
-    audio.addEventListener('canplay',        () => { mediaReady = true; applyState(); });
-
-    // Tap gesture lets us prime audio playback on iOS/Android.
-    try { audio.muted = false; await audio.play(); audio.pause(); } catch (_) {}
+    // Tap gesture lets us prime audio playback on iOS/Android, even before any src is set.
+    try { audio.muted = false; await audio.play().catch(() => {}); audio.pause(); } catch (_) {}
 
     await clock.sync();
 
     socket = io({ autoConnect: true });
-    socket.on('connect', () => socket.emit('listener:join', exhibitId));
+    socket.on('connect', () => socket.emit('listener:join'));
     socket.on('state', s => {
       serverState = s;
       renderStatus();
+      loadExhibitAudio();
       applyState();
     });
 
@@ -119,8 +121,7 @@
     playerCard.hidden = false;
   };
 
-  // Phone was locked / tab was hidden — when it comes back, treat it like a
-  // fresh start: re-sync the clock and re-apply the current server state once.
+  // Re-sync once when phone wakes from lock.
   document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible' && socket) {
       await clock.sync(3);
