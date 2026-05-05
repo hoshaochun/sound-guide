@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Exhibit QR codes</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    @media print {
+      body { background: white; color: black; }
+      .card, .qr-card { background: white; border: 1px solid #ccc; }
+      .no-print { display: none; }
+    }
+    .qr-card { background: #181c23; border: 1px solid #262c36; border-radius: 12px; padding: 16px; text-align: center; }
+    .qr-card h3 { margin: 0 0 8px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1 class="no-print">聲音 QR codes</h1>
+    <p class="muted no-print">掃描以聆聽聲音</p>
+    <div id="grid" class="qr-grid"></div>
+  </main>
+  <script>
+    fetch('/api/exhibits').then(r => r.json()).then(list => {
+      const grid = document.getElementById('grid');
+      for (const ex of list) {
+        const card = document.createElement('div');
+        card.className = 'qr-card';
+        card.innerHTML = `
+          <h3>${ex.title}</h3>
+          <img alt="QR for ${ex.title}" src="/api/qr/${encodeURIComponent(ex.id)}" />
+          <div class="muted" style="margin-top:8px;">${location.origin}/listen?e=${ex.id}</div>
+        `;
+        grid.appendChild(card);
+      }
+    });
+  </script>
+</body>
+</html>

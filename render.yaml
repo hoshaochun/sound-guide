@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: sound-guide
+    runtime: node
+    plan: starter           # change to 'free' for testing (sleeps after 15 min idle)
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: GUIDE_TOKEN
+        sync: false          # set this in the Render dashboard, not in git
+      - key: NODE_VERSION
+        value: 20

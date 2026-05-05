@@ -1,0 +1,16 @@
+{
+  "exhibits": [
+    {
+      "id": "ex1",
+      "title": "test1",
+      "description": "old time rock n roll",
+      "audio": "/audio/ex1.mp3"
+    },
+    {
+      "id": "ex2",
+      "title": "test2",
+      "description": "from the start",
+      "audio": "/audio/ex2.mp3"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>播放員控制台</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>播放員控制台</h1>
+
+    <section id="auth-card" class="card">
+      <h2>Sign in</h2>
+      <p class="muted">Enter the guide token to take control of playback.</p>
+      <input id="token" type="password" placeholder="Guide token" autocomplete="off" />
+      <div class="row" style="margin-top: 8px;">
+        <button id="auth-btn">Sign in</button>
+        <span id="auth-msg" class="muted"></span>
+      </div>
+    </section>
+
+    <section id="control-card" class="card" hidden>
+      <h2>聲音列表</h2>
+      <ul id="exhibit-list" class="exhibit-list"></ul>
+
+      <h2>正在控制: <span id="current-title">—</span></h2>
+      <div class="row">
+        <span id="status" class="status connecting">disconnected</span>
+        <span class="spacer"></span>
+        <span id="time" class="time">0:00</span>
+      </div>
+      <progress id="progress" value="0" max="1"></progress>
+      <div class="row" style="margin-top: 12px;">
+        <button id="play-btn">Play</button>
+        <button id="pause-btn" class="secondary">Pause</button>
+        <button id="back-btn"  class="secondary">−10s</button>
+        <button id="fwd-btn"   class="secondary">+10s</button>
+        <button id="stop-btn"  class="danger">Stop</button>
+      </div>
+      <p class="muted">Listeners who scan the QR code will join in sync.</p>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/sync-clock.js"></script>
+  <script src="/js/guide.js"></script>
+</body>
+</html>

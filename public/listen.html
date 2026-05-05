@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>場景聲音</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1 id="exhibit-title">場景聲音</h1>
+    <p id="exhibit-desc" class="muted"></p>
+
+    <section id="join-card" class="card">
+      <p>點擊按鈕以聆聽場景聲音</p>
+      <button id="join-btn" class="big-button">聆聽聲音</button>
+    </section>
+
+    <section id="player-card" class="card" hidden>
+      <div class="row">
+        <span id="status" class="status connecting">connecting</span>
+        <span class="spacer"></span>
+        <span id="time" class="time">0:00</span>
+      </div>
+      <progress id="progress" value="0" max="1"></progress>
+      <p class="muted" id="hint">此聲音由播放員控制</p>
+    </section>
+
+    <audio id="player" preload="auto" playsinline></audio>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/sync-clock.js"></script>
+  <script src="/js/listener.js"></script>
+</body>
+</html>

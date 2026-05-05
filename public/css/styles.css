@@ -1,0 +1,93 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #0f1115;
+  color: #e9edf1;
+  line-height: 1.45;
+}
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+h1 { margin: 0 0 12px; font-size: 28px; }
+h2 { margin: 24px 0 8px; font-size: 20px; }
+a { color: #7fb3ff; }
+.muted { color: #8993a4; font-size: 14px; }
+
+.card {
+  background: #181c23;
+  border: 1px solid #262c36;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #3a82f7;
+  color: white;
+  margin: 4px 4px 4px 0;
+}
+button.secondary { background: #2c3340; color: #e9edf1; }
+button.danger { background: #d04a4a; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+input[type="text"], input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #2c3340;
+  background: #0f1115;
+  color: #e9edf1;
+}
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+.exhibit-list { list-style: none; padding: 0; margin: 0; }
+.exhibit-list li { padding: 10px 0; border-bottom: 1px solid #262c36; }
+.exhibit-list li:last-child { border-bottom: 0; }
+
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status.playing { background: #1f6f3a; color: #d6f5e0; }
+.status.paused  { background: #6f5b1f; color: #f5ecd6; }
+.status.connecting { background: #2c3340; color: #b9c2cf; }
+
+progress {
+  width: 100%; height: 8px;
+  border: 0; border-radius: 4px; overflow: hidden;
+  background: #262c36;
+}
+progress::-webkit-progress-bar { background: #262c36; }
+progress::-webkit-progress-value { background: #3a82f7; }
+progress::-moz-progress-bar     { background: #3a82f7; }
+
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.qr-grid img { width: 100%; height: auto; background: white; border-radius: 8px; padding: 8px; }
+
+.big-button {
+  width: 100%;
+  padding: 24px;
+  font-size: 22px;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: #b9c2cf;
+}
