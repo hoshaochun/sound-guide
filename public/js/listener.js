@@ -103,13 +103,25 @@
     joinBtn.disabled = true;
     joinBtn.textContent = '加入中…';
 
-    // Tap gesture lets us prime audio playback on iOS/Android, even before any src is set.
-    try { audio.muted = false; await audio.play().catch(() => {}); audio.pause(); } catch (_) {}
+    // Prime audio for later programmatic playback. We DO NOT await the
+    // returned promise — on iOS Safari, calling play() on an audio element
+    // with no src returns a promise that never settles, which would hang
+    // the whole join flow. The synchronous play() call inside this click
+    // handler is what actually grants the user-gesture permission.
+    try {
+      audio.muted = false;
+      const p = audio.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+      audio.pause();
+    } catch (_) {}
 
-    await clock.sync();
+    joinBtn.textContent = '同步中…';
+    try { await clock.sync(); } catch (e) { console.error('clock sync failed', e); }
 
+    joinBtn.textContent = '連線中…';
     socket = io({ autoConnect: true });
-    socket.on('connect', () => socket.emit('listener:join'));
+    socket.on('connect',       () => socket.emit('listener:join'));
+    socket.on('connect_error', e => { console.error('connect_error', e.message); statusEl.textContent = '連線失敗'; });
     socket.on('state', s => {
       serverState = s;
       renderStatus();
