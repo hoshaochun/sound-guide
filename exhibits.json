@@ -2,15 +2,15 @@
   "exhibits": [
     {
       "id": "ex1",
-      "title": "test1",
-      "description": "old time rock n roll",
-      "audio": "/audio/ex1.mp3"
+      "title": "聲音測試",
+      "description": "測試音樂",
+      "audio": "/audio/test.mp3"
     },
     {
       "id": "ex2",
-      "title": "test2",
-      "description": "from the start",
-      "audio": "/audio/ex2.mp3"
+      "title": "開演前說明",
+      "description": "請仔細聆聽",
+      "audio": "/audio/開演前錄音.wav"
     }
   ]
 }
