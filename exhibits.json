@@ -11,6 +11,12 @@
       "title": "開演前說明",
       "description": "請仔細聆聽",
       "audio": "/audio/開演前錄音.wav"
+    },
+        {
+      "id": "ex3",
+      "title": "開場",
+      "description": "",
+      "audio": "/audio/筱玫老師開場.wav"
     }
   ]
 }
