@@ -18,11 +18,29 @@
       "description": "",
       "audio": "/audio/筱玫老師開場.mp3"
     },
-        {
+    {
       "id": "ex4",
-      "title": "m4a測試",
+      "title": "草地",
       "description": "",
-      "audio": "/audio/0228.m4a"
+      "audio": "/audio/草地.mp3"
+    },
+        {
+      "id": "ex5",
+      "title": "綠繡眼",
+      "description": "",
+      "audio": "/audio/綠繡眼.mp3"
+    },
+    {
+      "id": "ex6",
+      "title": "椰林大道",
+      "description": "",
+      "audio": "/audio/椰林大道.m4a"
+    },
+    {
+      "id": "ex7",
+      "title": "墜躍湖",
+      "description": "",
+      "audio": "/audio/墜躍湖.aac"
     }
   ]
 }
