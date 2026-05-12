@@ -12,11 +12,17 @@
       "description": "請仔細聆聽",
       "audio": "/audio/開演前錄音.wav"
     },
-        {
+    {
       "id": "ex3",
       "title": "開場",
       "description": "",
       "audio": "/audio/筱玫老師開場.mp3"
+    },
+        {
+      "id": "ex4",
+      "title": "m4a測試",
+      "description": "",
+      "audio": "/audio/0228.m4a"
     }
   ]
 }
